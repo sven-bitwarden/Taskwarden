@@ -1,12 +1,15 @@
 @using Taskwarden.Background
 @inject RefreshHostedService RefreshService
 
-<button class="btn btn-outline-secondary btn-sm" @onclick="OnRefresh" disabled="@IsRefreshing">
+<button class="btn btn-outline-secondary btn-sm" @onclick="OnRefresh" disabled="@IsRefreshing" title="Refresh now">
     @if (IsRefreshing)
     {
-        <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="width: 0.8rem; height: 0.8rem;"></span>
     }
-    Refresh Now
+    else
+    {
+        <i class="fa-solid fa-arrows-rotate" style="font-size: 0.72rem;"></i>
+    }
 </button>
 
 @code {

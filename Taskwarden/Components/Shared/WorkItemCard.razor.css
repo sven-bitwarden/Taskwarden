@@ -1,34 +1,36 @@
 .work-item-card {
-    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
     width: 100%;
     word-break: break-word;
 }
 
 .work-item-card:hover {
-    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0.15rem 0.5rem rgba(0, 0, 0, 0.25);
     border-color: #4a5565;
 }
 
 .ticket-key {
     font-family: 'Inter', monospace;
     font-weight: 600;
-    margin-right: 0.5rem;
+    font-size: 0.78rem;
+    margin-right: 0.35rem;
     color: #6baefa;
 }
 
 .link-icon {
-    margin-right: 0.25rem;
+    margin-right: 0.2rem;
     flex-shrink: 0;
-    font-size: 0.85rem;
+    font-size: 0.78rem;
 }
 
 .attention-reason {
     color: #ff8a4c;
+    font-size: 0.75rem;
 }
 
 /* Muted cards — non-actionable items (waiting, done, future) */
 .card-muted {
-    opacity: 0.6;
+    opacity: 0.55;
 }
 
 .card-muted:hover {
@@ -54,6 +56,7 @@
     padding: 0.15rem;
     line-height: 1;
     border-radius: 4px;
+    font-size: 0.78rem;
     transition: color 0.15s ease, background-color 0.15s ease;
 }
 
@@ -79,7 +82,7 @@
     z-index: 1001;
     background-color: #101828;
     border: 1px solid #333e4f;
-    border-radius: 12px;
+    border-radius: 10px;
     width: min(560px, 90vw);
     max-height: 80vh;
     display: flex;
@@ -99,7 +102,7 @@
     font-family: 'Inter', monospace;
     font-weight: 600;
     color: #6baefa;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 .btn-debug-close {
@@ -119,7 +122,7 @@
 .debug-modal-body {
     padding: 1rem;
     overflow-y: auto;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     font-family: 'Inter', monospace;
 }
 

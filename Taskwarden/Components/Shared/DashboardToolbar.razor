@@ -1,50 +1,64 @@
 @using Taskwarden.Models
 
-<div class="dashboard-toolbar d-flex align-items-center gap-2 mb-3 p-2 bg-light rounded">
-    <span class="fw-semibold" style="color: var(--ctp-text);">TaskWarden</span>
-
-    @if (GitHubLogin is not null || JiraDisplayName is not null)
-    {
-        <span class="text-muted small user-info">
-            @if (JiraDisplayName is not null)
-            {
-                <i class="fa-brands fa-jira" style="color: #2684ff;"></i> @JiraDisplayName
-            }
-            @if (JiraDisplayName is not null && GitHubLogin is not null)
-            {
-                <span class="user-separator">&middot;</span>
-            }
-            @if (GitHubLogin is not null)
-            {
-                <i class="fa-brands fa-github" style="color: #8b949e;"></i> @GitHubLogin
-            }
+<header class="toolbar">
+    <div class="toolbar-left">
+        <span class="toolbar-brand">
+            <i class="fa-solid fa-shield-halved toolbar-brand-icon"></i>
+            TaskWarden
         </span>
-    }
-
-    @if (ActiveSprint is not null)
-    {
-        <span class="text-muted small sprint-info">
-            <i class="fa-solid fa-person-running" style="color: #6baefa;"></i>
-            @ActiveSprint.Name
-            <span class="sprint-date">@ActiveSprint.StartDate.ToString("MMM d") – @ActiveSprint.EndDate.ToString("MMM d")</span>
-        </span>
-    }
-
-    <div class="ms-auto d-flex align-items-center gap-2">
-        @if (WorkItems.Count > 0)
+        @if (GitHubLogin is not null || JiraDisplayName is not null)
         {
-            <CompletedWorkModal DoneItems="@DoneItems" />
-            <StandupSummaryModal WorkItems="@WorkItems" />
-        }
-        @if (LastRefreshed.HasValue)
-        {
-            <span class="text-muted small">
-                Refreshed @FormatTimeAgo(LastRefreshed.Value)
+            <span class="toolbar-divider"></span>
+            <span class="toolbar-identity">
+                @if (JiraDisplayName is not null)
+                {
+                    <span class="toolbar-identity-item">
+                        <i class="fa-brands fa-jira" style="color: #2684ff;"></i> @JiraDisplayName
+                    </span>
+                }
+                @if (JiraDisplayName is not null && GitHubLogin is not null)
+                {
+                    <span class="toolbar-identity-sep">&middot;</span>
+                }
+                @if (GitHubLogin is not null)
+                {
+                    <span class="toolbar-identity-item">
+                        <i class="fa-brands fa-github" style="color: #8b949e;"></i> @GitHubLogin
+                    </span>
+                }
             </span>
         }
-        <RefreshButton IsRefreshing="@IsLoading" />
     </div>
-</div>
+
+    <div class="toolbar-right">
+        @if (ActiveSprint is not null)
+        {
+            <span class="toolbar-sprint">
+                <i class="fa-solid fa-person-running"></i>
+                <span class="toolbar-sprint-name">@ActiveSprint.Name</span>
+                <span class="toolbar-sprint-dates">@ActiveSprint.StartDate.ToString("MMM d") – @ActiveSprint.EndDate.ToString("MMM d")</span>
+            </span>
+            <span class="toolbar-divider"></span>
+        }
+
+        @if (WorkItems.Count > 0)
+        {
+            <div class="toolbar-actions">
+                <CompletedWorkModal DoneItems="@DoneItems" />
+                <StandupSummaryModal WorkItems="@WorkItems" />
+            </div>
+            <span class="toolbar-divider"></span>
+        }
+
+        <div class="toolbar-refresh">
+            @if (LastRefreshed.HasValue)
+            {
+                <span class="toolbar-timestamp">@FormatTimeAgo(LastRefreshed.Value)</span>
+            }
+            <RefreshButton IsRefreshing="@IsLoading" />
+        </div>
+    </div>
+</header>
 
 @code {
     [Parameter]
