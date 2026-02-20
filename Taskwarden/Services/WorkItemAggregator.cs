@@ -233,6 +233,9 @@ public class WorkItemAggregator(
             WorkflowStage.CodeReview when primaryPr?.ReviewState == "changes_requested" =>
                 (AttentionStatus.NeedsMyAttention, "Address review feedback"),
 
+            WorkflowStage.CodeReview when primaryPr?.ReviewState == "approved" =>
+                (AttentionStatus.NeedsMyAttention, "PR approved — move to QA or merge"),
+
             WorkflowStage.CodeReview =>
                 (AttentionStatus.WaitingOnOthers, "Waiting for code review"),
 
