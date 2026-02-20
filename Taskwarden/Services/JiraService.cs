@@ -14,15 +14,16 @@ public class JiraService(HttpClient httpClient, IOptions<JiraOptions> options, I
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     private readonly JiraOptions _options = options.Value;
+    private string ApiBaseUrl => $"https://api.atlassian.com/ex/jira/{_options.CloudId}";
     private string? _sprintFieldId;
 
     public async Task<IReadOnlyList<JiraTicket>> GetMyTicketsAsync(CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(_options.BaseUrl) ||
+        if (string.IsNullOrWhiteSpace(_options.CloudId) ||
             string.IsNullOrWhiteSpace(_options.Email) ||
             string.IsNullOrWhiteSpace(_options.ApiToken))
         {
-            throw new InvalidOperationException("Jira configuration is incomplete. Set BaseUrl, Email, and ApiToken.");
+            throw new InvalidOperationException("Jira configuration is incomplete. Set CloudId, Email, and ApiToken.");
         }
 
         _sprintFieldId ??= await DiscoverSprintFieldIdAsync(cancellationToken);
@@ -38,7 +39,7 @@ public class JiraService(HttpClient httpClient, IOptions<JiraOptions> options, I
 
         while (true)
         {
-            var url = $"{_options.BaseUrl.TrimEnd('/')}/rest/api/3/search/jql";
+            var url = $"{ApiBaseUrl}/rest/api/3/search/jql";
             var bodyDict = new Dictionary<string, object>
             {
                 ["jql"] = jql,
@@ -92,7 +93,7 @@ public class JiraService(HttpClient httpClient, IOptions<JiraOptions> options, I
         var keyList = string.Join(", ", keys);
         var jql = $"key in ({keyList}) ORDER BY updated DESC";
 
-        var url = $"{_options.BaseUrl.TrimEnd('/')}/rest/api/3/search/jql";
+        var url = $"{ApiBaseUrl}/rest/api/3/search/jql";
         var bodyDict = new Dictionary<string, object>
         {
             ["jql"] = jql,
@@ -122,7 +123,7 @@ public class JiraService(HttpClient httpClient, IOptions<JiraOptions> options, I
     {
         try
         {
-            var url = $"{_options.BaseUrl.TrimEnd('/')}/rest/api/3/field";
+            var url = $"{ApiBaseUrl}/rest/api/3/field";
             var request = CreateRequest(HttpMethod.Get, url);
             var response = await httpClient.SendAsync(request, cancellationToken);
             response.EnsureSuccessStatusCode();
@@ -164,7 +165,7 @@ public class JiraService(HttpClient httpClient, IOptions<JiraOptions> options, I
         try
         {
             // Find the board by name
-            var boardUrl = $"{_options.BaseUrl.TrimEnd('/')}/rest/agile/1.0/board?name={Uri.EscapeDataString(_options.BoardName)}";
+            var boardUrl = $"{ApiBaseUrl}/rest/agile/1.0/board?name={Uri.EscapeDataString(_options.BoardName)}";
             var boardRequest = CreateRequest(HttpMethod.Get, boardUrl);
             var boardResponse = await httpClient.SendAsync(boardRequest, cancellationToken);
             boardResponse.EnsureSuccessStatusCode();
@@ -191,7 +192,7 @@ public class JiraService(HttpClient httpClient, IOptions<JiraOptions> options, I
             boardId ??= boards[0].GetProperty("id").GetInt32();
 
             // Get active sprint for this board
-            var sprintUrl = $"{_options.BaseUrl.TrimEnd('/')}/rest/agile/1.0/board/{boardId.Value}/sprint?state=active";
+            var sprintUrl = $"{ApiBaseUrl}/rest/agile/1.0/board/{boardId.Value}/sprint?state=active";
             var sprintRequest = CreateRequest(HttpMethod.Get, sprintUrl);
             var sprintResponse = await httpClient.SendAsync(sprintRequest, cancellationToken);
             sprintResponse.EnsureSuccessStatusCode();
@@ -217,7 +218,7 @@ public class JiraService(HttpClient httpClient, IOptions<JiraOptions> options, I
 
     public async Task<string> GetCurrentUserDisplayNameAsync(CancellationToken cancellationToken = default)
     {
-        var url = $"{_options.BaseUrl.TrimEnd('/')}/rest/api/3/myself";
+        var url = $"{ApiBaseUrl}/rest/api/3/myself";
         var request = CreateRequest(HttpMethod.Get, url);
         var response = await httpClient.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();
@@ -297,7 +298,7 @@ public class JiraService(HttpClient httpClient, IOptions<JiraOptions> options, I
             ProjectKey = fields.TryGetProperty("project", out var project) && project.ValueKind != JsonValueKind.Null
                 ? project.GetProperty("key").GetString()
                 : null,
-            BrowseUrl = $"{_options.BaseUrl.TrimEnd('/')}/browse/{key}",
+            BrowseUrl = $"{_options.SiteUrl.TrimEnd('/')}/browse/{key}",
             UpdatedAt = fields.TryGetProperty("updated", out var updated)
                 ? DateTimeOffset.Parse(updated.GetString()!)
                 : null,

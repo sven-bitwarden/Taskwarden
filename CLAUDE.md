@@ -47,6 +47,8 @@ RefreshHostedService (10-min timer or manual)
 ## Key Design Decisions
 
 ### Jira API
+- All API calls go through the Atlassian API gateway: `https://api.atlassian.com/ex/jira/{CloudId}/rest/...`
+- `SiteUrl` (e.g. `https://bitwarden.atlassian.net/`) is only used for browse links shown to the user
 - Uses POST `/rest/api/3/search/jql` (GET endpoint returns 410 Gone)
 - Cursor-based pagination via `nextPageToken` (not `startAt`)
 - Auth: per-request `Authorization: Basic` header (Base64 of `email:apiToken`)
@@ -94,7 +96,7 @@ Credentials are in `appsettings.json` (should be moved to user-secrets):
 ```json
 {
   "Jira": {
-    "BaseUrl": "https://bitwarden.atlassian.net/",
+    "SiteUrl": "https://bitwarden.atlassian.net/",
     "Email": "...",
     "ApiToken": "...",
     "StatusMappings": { "To Do": "ToDo", "In Progress": "InProgress", ... }
