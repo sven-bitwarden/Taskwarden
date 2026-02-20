@@ -117,7 +117,7 @@
             ? $", <i>{System.Net.WebUtility.HtmlEncode(item.Ticket.StatusName)}</i>"
             : "";
 
-        return $"<a href=\"{item.Ticket.BrowseUrl}\">[{item.TicketKey}]</a>{repoTag} - {encodedSummary}{statusSuffix}";
+        return $"<a href=\"{item.Ticket.BrowseUrl}\">[{item.TicketKey}]</a>{repoTag} {encodedSummary}{statusSuffix}";
     }
 
     private static string FormatItemPlainText(WorkItem item, bool includeStatus)
@@ -127,7 +127,7 @@
         var summary = StripBracketedPrefixes(item.Ticket.Summary);
         var statusSuffix = includeStatus ? $", {item.Ticket.StatusName}" : "";
 
-        return $"{item.TicketKey}{repoTag} - {summary}{statusSuffix}";
+        return $"{item.TicketKey}{repoTag} {summary}{statusSuffix}";
     }
 
     private static List<string> GetRepoNames(WorkItem item)

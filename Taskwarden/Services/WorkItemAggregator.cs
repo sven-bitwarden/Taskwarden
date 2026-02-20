@@ -18,16 +18,15 @@ public class WorkItemAggregator(
         progress?.Report("Fetching Jira tickets, GitHub PRs, and review requests");
 
         var ticketsTask = jiraService.GetMyTicketsAsync(cancellationToken);
-        var prsTask = gitHubService.FindPullRequestsForUserAsync(cancellationToken);
-        var reviewsTask = gitHubService.FindReviewRequestsAsync(cancellationToken);
-        var reviewedTask = gitHubService.FindReviewedPullRequestsAsync(cancellationToken);
+        var githubTask = gitHubService.FetchAllPullRequestDataAsync(cancellationToken);
 
-        await Task.WhenAll(ticketsTask, prsTask, reviewsTask, reviewedTask);
+        await Task.WhenAll(ticketsTask, githubTask);
 
         var tickets = ticketsTask.Result;
-        var prsByTicket = prsTask.Result;
-        var reviewRequests = reviewsTask.Result;
-        var reviewedPrs = reviewedTask.Result;
+        var githubData = githubTask.Result;
+        var prsByTicket = githubData.AuthoredPrsByTicket;
+        var reviewRequests = githubData.ReviewRequests;
+        var reviewedPrs = githubData.ReviewedPrs;
         var now = DateTimeOffset.UtcNow;
 
         progress?.Report($"Received {tickets.Count} tickets, {prsByTicket.Count} PR groups, {reviewRequests.Count} review requests, {reviewedPrs.Count} reviewed PRs");

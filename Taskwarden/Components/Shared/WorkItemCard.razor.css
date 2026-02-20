@@ -28,6 +28,28 @@
     font-size: 0.75rem;
 }
 
+/* Review wait staleness badges */
+.review-wait-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: 0.5rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.review-wait-warning {
+    color: #f9e2af;
+    background-color: rgba(249, 226, 175, 0.12);
+}
+
+.review-wait-danger {
+    color: #f38ba8;
+    background-color: rgba(243, 139, 168, 0.12);
+}
+
 /* Muted cards — non-actionable items (waiting, done, future) */
 .card-muted {
     opacity: 0.55;

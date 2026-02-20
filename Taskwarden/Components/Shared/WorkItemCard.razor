@@ -48,7 +48,15 @@
 
         @if (Item.AttentionReason is not null)
         {
-            <div class="attention-reason small mt-2">@Item.AttentionReason</div>
+            <div class="attention-reason small mt-2">
+                @Item.AttentionReason
+                @if (ReviewWaitDays is >= 2)
+                {
+                    <span class="review-wait-badge @ReviewWaitClass">
+                        <i class="fa-regular fa-clock"></i> @ReviewWaitDays d
+                    </span>
+                }
+            </div>
         }
 
         <div class="text-muted mt-2" style="font-size: 0.7rem;">
@@ -159,6 +167,18 @@
         "changes_requested" => "bg-danger",
         "pending" => "bg-warning text-dark",
         _ => "bg-secondary"
+    };
+
+    private int? ReviewWaitDays =>
+        Item.Stage == WorkflowStage.CodeReview && Item.Attention == AttentionStatus.WaitingOnOthers
+            ? (int)(DateTimeOffset.UtcNow - (Item.PrimaryPullRequest?.UpdatedAt ?? Item.Ticket.UpdatedAt ?? DateTimeOffset.UtcNow)).TotalDays
+            : null;
+
+    private string ReviewWaitClass => ReviewWaitDays switch
+    {
+        >= 4 => "review-wait-danger",
+        >= 2 => "review-wait-warning",
+        _ => ""
     };
 
     private string ReviewLabel => Item.PrimaryPullRequest?.ReviewState switch
