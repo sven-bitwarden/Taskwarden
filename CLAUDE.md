@@ -71,7 +71,7 @@ RefreshHostedService (10-min timer or manual)
 ### Workflow Stage Mapping
 Jira status names are mapped to `WorkflowStage` enum via `StatusMappings` dictionary in config (case-insensitive). Add new mappings in `appsettings.json` under `Jira.StatusMappings`.
 
-Current mappings: To Do, In Progress, Code Review, Ready for QA, In QA, Ready for Merge, Blocked, Done.
+Current mappings: To Do, In Analysis, In Progress, Code Review, Ready for QA, In QA, Ready for Merge, Blocked, Product Review, Done.
 
 ### Attention Logic
 ```
