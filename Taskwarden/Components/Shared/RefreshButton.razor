@@ -1,0 +1,20 @@
+@using Taskwarden.Background
+@inject RefreshHostedService RefreshService
+
+<button class="btn btn-outline-secondary btn-sm" @onclick="OnRefresh" disabled="@IsRefreshing">
+    @if (IsRefreshing)
+    {
+        <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+    }
+    Refresh Now
+</button>
+
+@code {
+    [Parameter]
+    public bool IsRefreshing { get; set; }
+
+    private void OnRefresh()
+    {
+        RefreshService.RequestManualRefresh();
+    }
+}

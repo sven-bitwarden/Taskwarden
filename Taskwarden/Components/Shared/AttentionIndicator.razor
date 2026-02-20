@@ -1,0 +1,37 @@
+@using Taskwarden.Models
+
+@if (Attention != AttentionStatus.None)
+{
+    <span class="attention-pill @PillClass" title="@Reason">
+        @Icon @Label
+    </span>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public AttentionStatus Attention { get; set; }
+
+    [Parameter]
+    public string? Reason { get; set; }
+
+    private string PillClass => Attention switch
+    {
+        AttentionStatus.NeedsMyAttention => "attention-mine",
+        AttentionStatus.WaitingOnOthers => "attention-waiting",
+        _ => ""
+    };
+
+    private string Icon => Attention switch
+    {
+        AttentionStatus.NeedsMyAttention => "\u25cf",
+        AttentionStatus.WaitingOnOthers => "\u25cb",
+        _ => ""
+    };
+
+    private string Label => Attention switch
+    {
+        AttentionStatus.NeedsMyAttention => "Needs your attention",
+        AttentionStatus.WaitingOnOthers => "Waiting on others",
+        _ => ""
+    };
+}

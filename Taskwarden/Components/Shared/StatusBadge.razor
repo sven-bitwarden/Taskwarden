@@ -1,0 +1,36 @@
+@using Taskwarden.Models
+
+<span class="badge @BadgeClass">@DisplayText</span>
+
+@code {
+    [Parameter, EditorRequired]
+    public WorkflowStage Stage { get; set; }
+
+    private string BadgeClass => Stage switch
+    {
+        WorkflowStage.ToDo => "bg-secondary",
+        WorkflowStage.InProgress => "bg-primary",
+        WorkflowStage.CodeReview => "bg-info text-dark",
+        WorkflowStage.ReadyForQa => "bg-warning text-dark",
+        WorkflowStage.InQa => "bg-warning text-dark",
+        WorkflowStage.ReadyForMerge => "bg-success",
+        WorkflowStage.Blocked => "bg-danger",
+        WorkflowStage.ProductReview => "bg-info text-dark",
+        WorkflowStage.Done => "bg-dark",
+        _ => "bg-light text-dark"
+    };
+
+    private string DisplayText => Stage switch
+    {
+        WorkflowStage.ToDo => "To Do",
+        WorkflowStage.InProgress => "In Progress",
+        WorkflowStage.CodeReview => "Code Review",
+        WorkflowStage.ReadyForQa => "Ready for QA",
+        WorkflowStage.InQa => "In QA",
+        WorkflowStage.ReadyForMerge => "Ready for Merge",
+        WorkflowStage.Blocked => "Blocked",
+        WorkflowStage.ProductReview => "Product Review",
+        WorkflowStage.Done => "Done",
+        _ => "Unknown"
+    };
+}

@@ -1,0 +1,139 @@
+@page "/"
+@rendermode InteractiveServer
+@using Taskwarden.Models
+@using Taskwarden.State
+@implements IDisposable
+@inject DashboardStateContainer StateContainer
+
+<PageTitle>TaskWarden</PageTitle>
+
+@{
+    var snapshot = StateContainer.Snapshot;
+    _doneItems = snapshot.WorkItems
+        .Where(w => w.Attention == AttentionStatus.None && !string.Equals(w.Ticket.SprintState, "future", StringComparison.OrdinalIgnoreCase))
+        .ToList();
+}
+
+<DashboardToolbar WorkItems="@snapshot.WorkItems"
+                  DoneItems="@_doneItems"
+                  GitHubLogin="@snapshot.GitHubLogin"
+                  JiraDisplayName="@snapshot.JiraDisplayName"
+                  ActiveSprint="@snapshot.ActiveSprint"
+                  LastRefreshed="@snapshot.LastRefreshed"
+                  IsLoading="@snapshot.IsLoading" />
+
+@if (snapshot.Error is not null)
+{
+    <div class="alert alert-danger" role="alert">
+        <strong>Error loading data:</strong> @snapshot.Error
+    </div>
+}
+
+@if (snapshot.IsLoading && snapshot.WorkItems.Count == 0)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2 text-muted">Loading your work items...</p>
+    </div>
+}
+else if (snapshot.WorkItems.Count == 0)
+{
+    <EmptyState Title="No work items"
+                Message="Your Jira tickets and GitHub PRs will appear here once credentials are configured." />
+}
+else
+{
+    var items = snapshot.WorkItems;
+    var todoItems = items.Where(w => w.Attention == AttentionStatus.NeedsMyAttention).ToList();
+    var futureItems = items.Where(w => string.Equals(w.Ticket.SprintState, "future", StringComparison.OrdinalIgnoreCase)).ToList();
+    var waitingItems = items.Where(w => w.Attention == AttentionStatus.WaitingOnOthers).ToList();
+    var waitingReviewItems = waitingItems.Where(w => w.Stage == WorkflowStage.CodeReview).OrderBy(w => w.Ticket.UpdatedAt).ToList();
+    var waitingQaItems = waitingItems.Where(w => w.Stage != WorkflowStage.CodeReview).OrderBy(w => w.Ticket.UpdatedAt).ToList();
+    var reviewItems = items.Where(w => w.Attention == AttentionStatus.NeedsMyReview).ToList();
+
+    <div class="board">
+        <div class="board-column">
+            <div class="board-column-header col-todo">
+                To Do <span class="board-column-count">@(todoItems.Count + futureItems.Count)</span>
+            </div>
+            <div class="board-column-items">
+                @foreach (var item in todoItems)
+                {
+                    <WorkItemCard Item="@item" />
+                }
+            </div>
+            @if (futureItems.Count > 0)
+            {
+                <div class="board-subcategory-header">
+                    Future <span class="board-column-count">@futureItems.Count</span>
+                </div>
+                <div class="board-column-items">
+                    @foreach (var item in futureItems)
+                    {
+                        <WorkItemCard Item="@item" />
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="board-column">
+            <div class="board-column-header col-review">
+                Needs Review <span class="board-column-count">@reviewItems.Count</span>
+            </div>
+            <div class="board-column-items">
+                @foreach (var item in reviewItems)
+                {
+                    <WorkItemCard Item="@item" />
+                }
+            </div>
+        </div>
+
+        <div class="board-column">
+            <div class="board-column-header col-waiting-review">
+                Code Review <span class="board-column-count">@waitingReviewItems.Count</span>
+            </div>
+            <div class="board-column-items">
+                @foreach (var item in waitingReviewItems)
+                {
+                    <WorkItemCard Item="@item" />
+                }
+            </div>
+        </div>
+
+        <div class="board-column">
+            <div class="board-column-header col-waiting-qa">
+                QA / Other <span class="board-column-count">@waitingQaItems.Count</span>
+            </div>
+            <div class="board-column-items">
+                @foreach (var item in waitingQaItems)
+                {
+                    <WorkItemCard Item="@item" />
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<WorkItem> _doneItems = [];
+    private Timer? _tickTimer;
+
+    protected override void OnInitialized()
+    {
+        StateContainer.StateChanged += OnStateChanged;
+        _tickTimer = new Timer(_ => InvokeAsync(StateHasChanged), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
+    }
+
+    private void OnStateChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        StateContainer.StateChanged -= OnStateChanged;
+        _tickTimer?.Dispose();
+    }
+}

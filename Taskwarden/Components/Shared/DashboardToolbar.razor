@@ -1,0 +1,79 @@
+@using Taskwarden.Models
+
+<div class="dashboard-toolbar d-flex align-items-center gap-2 mb-3 p-2 bg-light rounded">
+    <span class="fw-semibold" style="color: var(--ctp-text);">TaskWarden</span>
+
+    @if (GitHubLogin is not null || JiraDisplayName is not null)
+    {
+        <span class="text-muted small user-info">
+            @if (JiraDisplayName is not null)
+            {
+                <i class="fa-brands fa-jira" style="color: #2684ff;"></i> @JiraDisplayName
+            }
+            @if (JiraDisplayName is not null && GitHubLogin is not null)
+            {
+                <span class="user-separator">&middot;</span>
+            }
+            @if (GitHubLogin is not null)
+            {
+                <i class="fa-brands fa-github" style="color: #8b949e;"></i> @GitHubLogin
+            }
+        </span>
+    }
+
+    @if (ActiveSprint is not null)
+    {
+        <span class="text-muted small sprint-info">
+            <i class="fa-solid fa-person-running" style="color: #6baefa;"></i>
+            @ActiveSprint.Name
+            <span class="sprint-date">@ActiveSprint.StartDate.ToString("MMM d") – @ActiveSprint.EndDate.ToString("MMM d")</span>
+        </span>
+    }
+
+    <div class="ms-auto d-flex align-items-center gap-2">
+        @if (WorkItems.Count > 0)
+        {
+            <CompletedWorkModal DoneItems="@DoneItems" />
+            <StandupSummaryModal WorkItems="@WorkItems" />
+        }
+        @if (LastRefreshed.HasValue)
+        {
+            <span class="text-muted small">
+                Refreshed @FormatTimeAgo(LastRefreshed.Value)
+            </span>
+        }
+        <RefreshButton IsRefreshing="@IsLoading" />
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<WorkItem> WorkItems { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlyList<WorkItem> DoneItems { get; set; } = [];
+
+    [Parameter]
+    public string? GitHubLogin { get; set; }
+
+    [Parameter]
+    public string? JiraDisplayName { get; set; }
+
+    [Parameter]
+    public SprintInfo? ActiveSprint { get; set; }
+
+    [Parameter]
+    public DateTimeOffset? LastRefreshed { get; set; }
+
+    [Parameter]
+    public bool IsLoading { get; set; }
+
+    private static string FormatTimeAgo(DateTimeOffset dt)
+    {
+        var ago = DateTimeOffset.UtcNow - dt;
+        return ago.TotalMinutes < 1 ? "just now"
+            : ago.TotalMinutes < 60 ? $"{(int)ago.TotalMinutes}m ago"
+            : ago.TotalHours < 24 ? $"{(int)ago.TotalHours}h ago"
+            : $"{(int)ago.TotalDays}d ago";
+    }
+}

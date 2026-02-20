@@ -1,0 +1,175 @@
+@using System.Text.Json
+@using Taskwarden.Models
+
+<div class="card work-item-card @BorderClass">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="d-flex flex-wrap align-items-center gap-1">
+                <a href="@Item.Ticket.BrowseUrl" target="_blank" class="ticket-key fw-bold text-decoration-none">
+                    <i class="fa-brands fa-jira link-icon" style="color: #2684ff;"></i>
+                    @Item.TicketKey
+                </a>
+                <StatusBadge Stage="@Item.Stage" />
+                @if (Item.Ticket.SprintName is not null)
+                {
+                    <span class="badge @SprintBadgeClass">@Item.Ticket.SprintName</span>
+                }
+            </div>
+            <button class="btn-debug" @onclick="ToggleDebug" title="Show raw data">
+                <i class="fa-solid fa-circle-info"></i>
+            </button>
+        </div>
+
+        <h6 class="card-title mb-2">@Item.Ticket.Summary</h6>
+
+        @if (Item.PrimaryPullRequest is not null)
+        {
+            var pr = Item.PrimaryPullRequest;
+            <div class="pr-info d-flex align-items-center gap-2 small text-muted">
+                <a href="@pr.Url" target="_blank" class="text-decoration-none">
+                    <i class="fa-solid fa-code-pull-request link-icon" style="color: #8b949e;"></i>
+                    PR #@pr.Number
+                </a>
+                <span class="badge @PrStateBadgeClass">@PrStateLabel</span>
+                @if (pr.ReviewState is not null)
+                {
+                    <span class="badge @ReviewBadgeClass">@ReviewLabel</span>
+                }
+                @if (pr.IsDraft)
+                {
+                    <span class="badge bg-light text-dark border">Draft</span>
+                }
+            </div>
+        }
+        else if (Item.Stage is WorkflowStage.InProgress or WorkflowStage.CodeReview)
+        {
+            <div class="small text-muted fst-italic">No PR linked</div>
+        }
+
+        @if (Item.AttentionReason is not null)
+        {
+            <div class="attention-reason small mt-2">@Item.AttentionReason</div>
+        }
+
+        <div class="text-muted mt-2" style="font-size: 0.7rem;">
+            Updated @FormatTimeAgo(Item.Ticket.UpdatedAt)
+        </div>
+    </div>
+</div>
+
+@if (_showDebug)
+{
+    <div class="modal-backdrop" @onclick="ToggleDebug"></div>
+    <div class="debug-modal">
+        <div class="debug-modal-header">
+            <span class="debug-modal-title">@Item.TicketKey — Debug Info</span>
+            <button class="btn-debug-close" @onclick="ToggleDebug">&times;</button>
+        </div>
+        <div class="debug-modal-body">
+            <div class="debug-section">
+                <div class="debug-header">Computed</div>
+                <div class="debug-row"><span>Stage</span><span>@Item.Stage</span></div>
+                <div class="debug-row"><span>Attention</span><span>@Item.Attention</span></div>
+                <div class="debug-row"><span>Reason</span><span>@(Item.AttentionReason ?? "—")</span></div>
+                <div class="debug-row"><span>PR count</span><span>@Item.PullRequests.Count</span></div>
+            </div>
+            <div class="debug-section">
+                <div class="debug-header">Jira</div>
+                <div class="debug-row"><span>Status</span><span>@Item.Ticket.StatusName</span></div>
+                <div class="debug-row"><span>Status Category</span><span>@(Item.Ticket.StatusCategoryKey ?? "—")</span></div>
+                <div class="debug-row"><span>Type</span><span>@(Item.Ticket.IssueTypeName ?? "—")</span></div>
+                <div class="debug-row"><span>Priority</span><span>@(Item.Ticket.PriorityName ?? "—")</span></div>
+                <div class="debug-row"><span>Project</span><span>@(Item.Ticket.ProjectKey ?? "—")</span></div>
+                <div class="debug-row"><span>Sprint</span><span>@(Item.Ticket.SprintName ?? "—")</span></div>
+                <div class="debug-row"><span>Sprint State</span><span>@(Item.Ticket.SprintState ?? "—")</span></div>
+                @if (Item.Ticket.Labels.Count > 0)
+                {
+                    <div class="debug-row"><span>Labels</span><span>@string.Join(", ", Item.Ticket.Labels)</span></div>
+                }
+            </div>
+            @foreach (var pr in Item.PullRequests)
+            {
+                <div class="debug-section">
+                    <div class="debug-header">PR #@pr.Number (@pr.RepositoryFullName)</div>
+                    <div class="debug-row"><span>Branch</span><span>@pr.HeadBranch</span></div>
+                    <div class="debug-row"><span>State</span><span>@pr.State</span></div>
+                    <div class="debug-row"><span>Draft</span><span>@pr.IsDraft</span></div>
+                    <div class="debug-row"><span>Merged</span><span>@pr.IsMerged</span></div>
+                    <div class="debug-row"><span>Review</span><span>@(pr.ReviewState ?? "—")</span></div>
+                    @if (pr.PendingReviewers.Count > 0)
+                    {
+                        <div class="debug-row"><span>Pending reviewers</span><span>@string.Join(", ", pr.PendingReviewers)</span></div>
+                    }
+                    @if (pr.Labels.Count > 0)
+                    {
+                        <div class="debug-row"><span>Labels</span><span>@string.Join(", ", pr.Labels)</span></div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public WorkItem Item { get; set; } = default!;
+
+    private bool _showDebug;
+
+    private void ToggleDebug() => _showDebug = !_showDebug;
+
+    private string SprintBadgeClass => Item.Ticket.SprintState?.ToLowerInvariant() switch
+    {
+        "future" => "bg-surface-sprint",
+        "active" => "bg-dark",
+        _ => "bg-dark"
+    };
+
+    private string BorderClass => Item.Attention switch
+    {
+        AttentionStatus.NeedsMyAttention => "border-warning",
+        _ => ""
+    };
+
+    private string PrStateBadgeClass => Item.PrimaryPullRequest?.State switch
+    {
+        "open" => "bg-success",
+        "merged" => "bg-purple",
+        "closed" => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    private string PrStateLabel => Item.PrimaryPullRequest?.State switch
+    {
+        "open" => "Open",
+        "merged" => "Merged",
+        "closed" => "Closed",
+        _ => "Unknown"
+    };
+
+    private string ReviewBadgeClass => Item.PrimaryPullRequest?.ReviewState switch
+    {
+        "approved" => "bg-success",
+        "changes_requested" => "bg-danger",
+        "pending" => "bg-warning text-dark",
+        _ => "bg-secondary"
+    };
+
+    private string ReviewLabel => Item.PrimaryPullRequest?.ReviewState switch
+    {
+        "approved" => "Approved",
+        "changes_requested" => "Changes Requested",
+        "pending" => "Review Pending",
+        _ => ""
+    };
+
+    private static string FormatTimeAgo(DateTimeOffset? dt)
+    {
+        if (dt is null) return "unknown";
+        var ago = DateTimeOffset.UtcNow - dt.Value;
+        return ago.TotalMinutes < 1 ? "just now"
+            : ago.TotalMinutes < 60 ? $"{(int)ago.TotalMinutes}m ago"
+            : ago.TotalHours < 24 ? $"{(int)ago.TotalHours}h ago"
+            : $"{(int)ago.TotalDays}d ago";
+    }
+}

@@ -1,0 +1,175 @@
+/* Bitwarden dark mode palette */
+:root {
+    --bw-gray-050: #f9fafb;
+    --bw-gray-100: #f3f4f6;
+    --bw-gray-200: #e5e7eb;
+    --bw-gray-300: #d1d5dc;
+    --bw-gray-400: #99a1af;
+    --bw-gray-500: #6a7282;
+    --bw-gray-600: #4a5565;
+    --bw-gray-700: #333e4f;
+    --bw-gray-800: #1e2939;
+    --bw-gray-900: #101828;
+    --bw-gray-950: #070b18;
+
+    --bw-brand-200: #bedbff;
+    --bw-brand-400: #6baefa;
+    --bw-brand-500: #418bfb;
+    --bw-brand-700: #175ddc;
+    --bw-brand-800: #0d43af;
+    --bw-brand-900: #0c3276;
+
+    --bw-green-400: #18dc7a;
+    --bw-green-800: #016630;
+    --bw-green-900: #0d542b;
+    --bw-red-400: #ff6467;
+    --bw-red-800: #9f0712;
+    --bw-orange-400: #ff8a4c;
+    --bw-orange-800: #8a2c0d;
+    --bw-yellow-400: #fdc700;
+    --bw-purple-400: #c27aff;
+    --bw-purple-800: #6e11b0;
+    --bw-teal-400: #2cdde9;
+    --bw-teal-800: #006278;
+    --bw-coral-400: #ff6550;
+
+    /* Semantic mappings */
+    --color-bg-page: var(--bw-gray-900);
+    --color-bg-panel: var(--bw-gray-800);
+    --color-bg-card: var(--bw-gray-700);
+    --color-bg-elevated: var(--bw-gray-600);
+
+    --color-fg-heading: var(--bw-gray-050);
+    --color-fg-body: var(--bw-gray-200);
+    --color-fg-muted: var(--bw-gray-400);
+    --color-fg-subtle: var(--bw-gray-500);
+    --color-fg-disabled: var(--bw-gray-600);
+
+    --color-border-base: var(--bw-gray-700);
+    --color-border-light: var(--bw-gray-800);
+    --color-border-strong: var(--bw-gray-400);
+
+    --color-brand: var(--bw-brand-400);
+    --color-brand-hover: var(--bw-brand-500);
+}
+
+html, body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--color-bg-page);
+    color: var(--color-fg-body);
+    min-height: 100vh;
+}
+
+body {
+    overflow-y: auto;
+}
+
+a, .btn-link {
+    color: var(--color-brand);
+}
+
+a:hover, .btn-link:hover {
+    color: var(--color-brand-hover);
+}
+
+/* Cards */
+.card {
+    background-color: var(--color-bg-card);
+    border-color: var(--color-border-base);
+    color: var(--color-fg-body);
+    border-radius: 12px;
+}
+
+.card-title {
+    color: var(--color-fg-heading);
+}
+
+/* Text utilities */
+.text-muted {
+    color: var(--color-fg-muted) !important;
+}
+
+/* Badges */
+.badge.bg-secondary { background-color: var(--bw-gray-500) !important; color: var(--bw-gray-950) !important; }
+.badge.bg-primary { background-color: var(--color-brand) !important; color: var(--bw-gray-950) !important; }
+.badge.bg-info { background-color: var(--bw-brand-200) !important; color: var(--bw-gray-950) !important; }
+.badge.bg-warning { background-color: var(--bw-orange-400) !important; color: var(--bw-gray-950) !important; }
+.badge.bg-success { background-color: var(--bw-green-400) !important; color: var(--bw-gray-950) !important; }
+.badge.bg-danger { background-color: var(--bw-red-400) !important; color: var(--bw-gray-950) !important; }
+.badge.bg-dark { background-color: var(--bw-gray-600) !important; color: var(--bw-gray-200) !important; }
+.badge.bg-light { background-color: var(--bw-gray-700) !important; color: var(--bw-gray-300) !important; border-color: var(--bw-gray-600) !important; }
+.badge.bg-white { background-color: var(--bw-gray-700) !important; color: var(--color-fg-heading) !important; }
+.badge.bg-purple { background-color: var(--bw-purple-400) !important; color: var(--bw-gray-950) !important; }
+.badge.text-dark { color: var(--bw-gray-950) !important; }
+
+/* Buttons */
+.btn-primary { background-color: var(--color-brand); border-color: var(--color-brand); color: var(--bw-gray-950); }
+.btn-primary:hover { background-color: var(--color-brand-hover); border-color: var(--color-brand-hover); color: var(--bw-gray-950); }
+.btn-outline-primary { color: var(--color-brand); border-color: var(--color-brand); }
+.btn-outline-primary:hover { background-color: var(--color-brand); color: var(--bw-gray-950); }
+
+.btn-warning { background-color: var(--bw-orange-400); border-color: var(--bw-orange-400); color: var(--bw-gray-950); }
+.btn-warning:hover { background-color: var(--bw-yellow-400); border-color: var(--bw-yellow-400); color: var(--bw-gray-950); }
+.btn-outline-warning { color: var(--bw-orange-400); border-color: var(--bw-orange-400); }
+.btn-outline-warning:hover { background-color: var(--bw-orange-400); color: var(--bw-gray-950); }
+
+.btn-secondary { background-color: var(--bw-gray-600); border-color: var(--bw-gray-600); color: var(--color-fg-heading); }
+.btn-secondary:hover { background-color: var(--bw-gray-500); border-color: var(--bw-gray-500); color: var(--color-fg-heading); }
+.btn-outline-secondary { color: var(--bw-gray-400); border-color: var(--bw-gray-600); }
+.btn-outline-secondary:hover { background-color: var(--bw-gray-600); color: var(--color-fg-heading); }
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem var(--color-bg-card), 0 0 0 0.25rem var(--color-brand);
+}
+
+/* Toolbar background */
+.bg-light {
+    background-color: var(--color-bg-panel) !important;
+}
+
+/* Alerts */
+.alert-danger {
+    background-color: color-mix(in srgb, var(--bw-red-400) 15%, var(--color-bg-page));
+    border-color: var(--bw-red-400);
+    color: var(--bw-red-400);
+}
+
+/* Spinner */
+.spinner-border.text-primary {
+    color: var(--color-brand) !important;
+}
+
+/* Borders */
+.border-warning {
+    border-color: var(--bw-orange-400) !important;
+}
+
+.rounded {
+    border: 1px solid var(--color-border-base);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: var(--color-bg-panel);
+}
+::-webkit-scrollbar-thumb {
+    background: var(--bw-gray-600);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--bw-gray-500);
+}
+
+/* Blazor error boundary */
+.blazor-error-boundary {
+    padding: 1rem 1rem 1rem 3.7rem;
+    color: var(--bw-red-400);
+    background-color: var(--color-bg-card);
+}
+
+.blazor-error-boundary::after {
+    content: "An error has occurred."
+}

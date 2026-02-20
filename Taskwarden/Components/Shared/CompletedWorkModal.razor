@@ -1,0 +1,41 @@
+@using Taskwarden.Models
+
+<button class="btn btn-sm btn-outline-secondary" @onclick="Open">
+    Completed <span class="badge bg-dark ms-1">@DoneItems.Count</span>
+</button>
+
+@if (_showModal)
+{
+    <div class="completed-backdrop" @onclick="Close"></div>
+    <div class="completed-modal">
+        <div class="completed-modal-header">
+            <span class="completed-modal-title">Completed Work</span>
+            <button class="btn-completed-close" @onclick="Close">&times;</button>
+        </div>
+        <div class="completed-modal-body">
+            @if (DoneItems.Count == 0)
+            {
+                <p class="text-muted small">No completed items.</p>
+            }
+            else
+            {
+                <div class="completed-items">
+                    @foreach (var item in DoneItems)
+                    {
+                        <WorkItemCard Item="@item" />
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<WorkItem> DoneItems { get; set; } = [];
+
+    private bool _showModal;
+
+    private void Open() => _showModal = true;
+    private void Close() => _showModal = false;
+}

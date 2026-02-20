@@ -1,0 +1,79 @@
+.standup-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(7, 11, 24, 0.85);
+    z-index: 1000;
+}
+
+.standup-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1001;
+    background-color: #101828;
+    border: 1px solid #333e4f;
+    border-radius: 12px;
+    width: min(700px, 90vw);
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.5);
+}
+
+.standup-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #333e4f;
+}
+
+.standup-modal-title {
+    font-weight: 600;
+    color: #f9fafb;
+    font-size: 0.95rem;
+}
+
+.btn-standup-close {
+    background: none;
+    border: none;
+    color: #6a7282;
+    font-size: 1.4rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+.btn-standup-close:hover {
+    color: #e5e7eb;
+}
+
+.standup-modal-body {
+    padding: 1rem;
+    overflow-y: auto;
+}
+
+.standup-content {
+    color: #e5e7eb;
+    font-size: 0.85rem;
+    line-height: 1.8;
+}
+
+.standup-content ::deep a {
+    color: #6baefa;
+    text-decoration: none;
+}
+
+.standup-content ::deep a:hover {
+    text-decoration: underline;
+}
+
+.standup-content ::deep i {
+    color: #99a1af;
+}
+
+.standup-content ::deep b {
+    color: #f9fafb;
+    font-size: 0.95rem;
+}

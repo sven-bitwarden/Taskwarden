@@ -1,0 +1,22 @@
+.attention-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.attention-mine {
+    background-color: color-mix(in srgb, #ff8a4c 20%, #101828);
+    color: #ff8a4c;
+    border: 1px solid #ff8a4c;
+}
+
+.attention-waiting {
+    background-color: color-mix(in srgb, #99a1af 20%, #101828);
+    color: #99a1af;
+    border: 1px solid #333e4f;
+}

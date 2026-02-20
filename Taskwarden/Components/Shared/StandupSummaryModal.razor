@@ -1,0 +1,163 @@
+@using Taskwarden.Models
+@using Microsoft.AspNetCore.Components
+
+<button class="btn btn-sm btn-outline-primary" @onclick="Open">
+    Standup Summary
+</button>
+
+@if (_showModal)
+{
+    <div class="standup-backdrop" @onclick="Close"></div>
+    <div class="standup-modal">
+        <div class="standup-modal-header">
+            <span class="standup-modal-title">Standup Summary</span>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-primary" @onclick="CopyToClipboard">
+                    @(_copied ? "Copied!" : "Copy")
+                </button>
+                <button class="btn-standup-close" @onclick="Close">&times;</button>
+            </div>
+        </div>
+        <div class="standup-modal-body">
+            <div class="standup-content" id="standup-content">
+                @_renderedContent
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<WorkItem> WorkItems { get; set; } = [];
+
+    [Inject]
+    private IJSRuntime JS { get; set; } = default!;
+
+    private bool _showModal;
+    private bool _copied;
+    private MarkupString _renderedContent;
+    private string _htmlForClipboard = string.Empty;
+    private string _plainTextForClipboard = string.Empty;
+
+    private void Open()
+    {
+        var (html, plainText) = GenerateSummary();
+        _renderedContent = new MarkupString(html);
+        _htmlForClipboard = html;
+        _plainTextForClipboard = plainText;
+        _copied = false;
+        _showModal = true;
+    }
+
+    private void Close() => _showModal = false;
+
+    private async Task CopyToClipboard()
+    {
+        await JS.InvokeVoidAsync("copyRichText", _htmlForClipboard, _plainTextForClipboard);
+        _copied = true;
+    }
+
+    private (string Html, string PlainText) GenerateSummary()
+    {
+        var cutoff = DateTimeOffset.UtcNow.AddDays(-8);
+
+        var myItems = WorkItems
+            .Where(w => w.Attention != AttentionStatus.NeedsMyReview)
+            .ToList();
+
+        var lastWeekItems = myItems
+            .Where(w => GetLatestUpdate(w) >= cutoff)
+            .ToList();
+
+        var thisWeekItems = myItems
+            .Where(w => w.Stage != WorkflowStage.Done)
+            .ToList();
+
+        var html = new System.Text.StringBuilder();
+        var plain = new System.Text.StringBuilder();
+
+        html.Append("<b>Last week:</b><br>");
+        plain.AppendLine("Last week:");
+        foreach (var item in lastWeekItems)
+        {
+            html.Append(FormatItemHtml(item, includeStatus: true)).Append("<br>");
+            plain.AppendLine(FormatItemPlainText(item, includeStatus: true));
+        }
+
+        html.Append("<br><b>This week:</b><br>");
+        plain.AppendLine();
+        plain.AppendLine("This week:");
+        foreach (var item in thisWeekItems)
+        {
+            html.Append(FormatItemHtml(item, includeStatus: false)).Append("<br>");
+            plain.AppendLine(FormatItemPlainText(item, includeStatus: false));
+        }
+
+        return (html.ToString(), plain.ToString().TrimEnd());
+    }
+
+    private static DateTimeOffset GetLatestUpdate(WorkItem item)
+    {
+        var latest = item.Ticket.UpdatedAt ?? DateTimeOffset.MinValue;
+        foreach (var pr in item.PullRequests)
+        {
+            if (pr.UpdatedAt.HasValue && pr.UpdatedAt.Value > latest)
+                latest = pr.UpdatedAt.Value;
+        }
+        return latest;
+    }
+
+    private static string FormatItemHtml(WorkItem item, bool includeStatus)
+    {
+        var repos = GetRepoNames(item);
+        var repoTag = repos.Count > 0 ? $" [{string.Join(" + ", repos)}]" : "";
+        var summary = StripBracketedPrefixes(item.Ticket.Summary);
+        var encodedSummary = System.Net.WebUtility.HtmlEncode(summary);
+        var statusSuffix = includeStatus
+            ? $", <i>{System.Net.WebUtility.HtmlEncode(item.Ticket.StatusName)}</i>"
+            : "";
+
+        return $"<a href=\"{item.Ticket.BrowseUrl}\">[{item.TicketKey}]</a>{repoTag} - {encodedSummary}{statusSuffix}";
+    }
+
+    private static string FormatItemPlainText(WorkItem item, bool includeStatus)
+    {
+        var repos = GetRepoNames(item);
+        var repoTag = repos.Count > 0 ? $" [{string.Join(" + ", repos)}]" : "";
+        var summary = StripBracketedPrefixes(item.Ticket.Summary);
+        var statusSuffix = includeStatus ? $", {item.Ticket.StatusName}" : "";
+
+        return $"{item.TicketKey}{repoTag} - {summary}{statusSuffix}";
+    }
+
+    private static List<string> GetRepoNames(WorkItem item)
+    {
+        return item.PullRequests
+            .Select(pr => FormatRepoName(pr.RepositoryFullName))
+            .Distinct()
+            .ToList();
+    }
+
+    private static string FormatRepoName(string repoFullName)
+    {
+        var repoName = repoFullName.Split('/').Last();
+        return repoName.ToLowerInvariant() switch
+        {
+            "clients" => "Client",
+            "server" => "Server",
+            _ => string.Join(' ', repoName.Split('-')
+                .Select(w => w.Length > 0 ? char.ToUpper(w[0]) + w[1..] : w))
+        };
+    }
+
+    private static string StripBracketedPrefixes(string summary)
+    {
+        while (summary.StartsWith('['))
+        {
+            var close = summary.IndexOf(']');
+            if (close < 0) break;
+            summary = summary[(close + 1)..].TrimStart(' ', '-', ':');
+        }
+        return summary;
+    }
+}
