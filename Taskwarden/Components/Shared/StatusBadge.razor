@@ -9,6 +9,7 @@
     private string BadgeClass => Stage switch
     {
         WorkflowStage.ToDo => "bg-secondary",
+        WorkflowStage.InAnalysis => "bg-primary",
         WorkflowStage.InProgress => "bg-primary",
         WorkflowStage.CodeReview => "bg-info text-dark",
         WorkflowStage.ReadyForQa => "bg-warning text-dark",
@@ -17,12 +18,13 @@
         WorkflowStage.Blocked => "bg-danger",
         WorkflowStage.ProductReview => "bg-info text-dark",
         WorkflowStage.Done => "bg-dark",
-        _ => "bg-light text-dark"
+        _ => "bg-secondary"
     };
 
     private string DisplayText => Stage switch
     {
         WorkflowStage.ToDo => "To Do",
+        WorkflowStage.InAnalysis => "In Analysis",
         WorkflowStage.InProgress => "In Progress",
         WorkflowStage.CodeReview => "Code Review",
         WorkflowStage.ReadyForQa => "Ready for QA",

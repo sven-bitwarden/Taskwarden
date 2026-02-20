@@ -13,18 +13,24 @@ public class WorkItemAggregator(
 {
     private readonly Dictionary<string, string> _statusMappings = jiraOptions.Value.StatusMappings;
 
-    public async Task<IReadOnlyList<WorkItem>> AggregateAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<WorkItem>> AggregateAsync(IProgress<string>? progress = null, CancellationToken cancellationToken = default)
     {
+        progress?.Report("Fetching Jira tickets, GitHub PRs, and review requests");
+
         var ticketsTask = jiraService.GetMyTicketsAsync(cancellationToken);
         var prsTask = gitHubService.FindPullRequestsForUserAsync(cancellationToken);
         var reviewsTask = gitHubService.FindReviewRequestsAsync(cancellationToken);
+        var reviewedTask = gitHubService.FindReviewedPullRequestsAsync(cancellationToken);
 
-        await Task.WhenAll(ticketsTask, prsTask, reviewsTask);
+        await Task.WhenAll(ticketsTask, prsTask, reviewsTask, reviewedTask);
 
         var tickets = ticketsTask.Result;
         var prsByTicket = prsTask.Result;
         var reviewRequests = reviewsTask.Result;
+        var reviewedPrs = reviewedTask.Result;
         var now = DateTimeOffset.UtcNow;
+
+        progress?.Report($"Received {tickets.Count} tickets, {prsByTicket.Count} PR groups, {reviewRequests.Count} review requests, {reviewedPrs.Count} reviewed PRs");
 
         logger.LogInformation("Aggregating {TicketCount} tickets with {PrGroups} PR groups and {ReviewCount} review requests",
             tickets.Count, prsByTicket.Count, reviewRequests.Count);
@@ -37,6 +43,7 @@ public class WorkItemAggregator(
 
         if (missingKeys.Count > 0)
         {
+            progress?.Report($"Fetching {missingKeys.Count} extra tickets found via PRs");
             logger.LogInformation("Fetching {Count} tickets found via PRs but not assigned to me: {Keys}",
                 missingKeys.Count, string.Join(", ", missingKeys));
 
@@ -87,6 +94,8 @@ public class WorkItemAggregator(
                 orphanReviewPrs.Add(pr!);
             }
         }
+
+        progress?.Report("Matching review requests to Jira tickets");
 
         // Fetch Jira tickets for review PRs that have ticket keys
         var reviewTicketKeys = reviewsByTicket.Keys
@@ -155,6 +164,88 @@ public class WorkItemAggregator(
             });
         }
 
+        // Build "already reviewed" WorkItems from PRs the user has reviewed
+        var allKeys = new HashSet<string>(workItems.Select(w => w.TicketKey), StringComparer.OrdinalIgnoreCase);
+        var reviewedByTicket = new Dictionary<string, List<GitHubPullRequest>>(StringComparer.OrdinalIgnoreCase);
+        var orphanReviewedPrs = new List<GitHubPullRequest>();
+
+        foreach (var (ticketKey, pr) in reviewedPrs)
+        {
+            if (ticketKey is not null)
+            {
+                if (!reviewedByTicket.TryGetValue(ticketKey, out var list))
+                {
+                    list = [];
+                    reviewedByTicket[ticketKey] = list;
+                }
+                list.Add(pr!);
+            }
+            else
+            {
+                orphanReviewedPrs.Add(pr!);
+            }
+        }
+
+        // Fetch Jira tickets for reviewed PRs
+        var reviewedTicketKeys = reviewedByTicket.Keys
+            .Where(k => !allKeys.Contains(k))
+            .ToList();
+
+        var reviewedTicketsById = new Dictionary<string, JiraTicket>(StringComparer.OrdinalIgnoreCase);
+        if (reviewedTicketKeys.Count > 0)
+        {
+            var reviewedTickets = await jiraService.GetTicketsByKeysAsync(reviewedTicketKeys, cancellationToken);
+            foreach (var t in reviewedTickets)
+                reviewedTicketsById[t.Key] = t;
+        }
+
+        foreach (var (key, prs) in reviewedByTicket)
+        {
+            if (allKeys.Contains(key))
+                continue;
+
+            var ticket = reviewedTicketsById.TryGetValue(key, out var t)
+                ? t
+                : CreateStubTicket(key, prs[0]);
+
+            var primaryPr = SelectPrimaryPr(prs);
+
+            workItems.Add(new WorkItem
+            {
+                TicketKey = key,
+                Ticket = ticket,
+                PullRequests = prs,
+                PrimaryPullRequest = primaryPr,
+                Stage = MapStage(ticket.StatusName),
+                Attention = AttentionStatus.Reviewed,
+                AttentionReason = "Review submitted",
+                LastRefreshed = now
+            });
+        }
+
+        foreach (var pr in orphanReviewedPrs)
+        {
+            var stubKey = $"{FormatRepoShortName(pr.RepositoryFullName)}#{pr.Number}";
+            if (allKeys.Contains(stubKey))
+                continue;
+
+            var ticket = CreateStubTicket(stubKey, pr);
+
+            workItems.Add(new WorkItem
+            {
+                TicketKey = stubKey,
+                Ticket = ticket,
+                PullRequests = [pr],
+                PrimaryPullRequest = pr,
+                Stage = WorkflowStage.CodeReview,
+                Attention = AttentionStatus.Reviewed,
+                AttentionReason = "Review submitted",
+                LastRefreshed = now
+            });
+        }
+
+        progress?.Report($"Built {workItems.Count} work items, sorting");
+
         // Sort: NeedsMyAttention first, then WaitingOnOthers, then None, then NeedsMyReview
         workItems.Sort((a, b) =>
         {
@@ -220,6 +311,9 @@ public class WorkItemAggregator(
         {
             WorkflowStage.ToDo =>
                 (AttentionStatus.NeedsMyAttention, "Start work on this ticket"),
+
+            WorkflowStage.InAnalysis =>
+                (AttentionStatus.NeedsMyAttention, "In analysis"),
 
             WorkflowStage.InProgress when !hasAnyPr =>
                 (AttentionStatus.NeedsMyAttention, "Create a branch and PR"),

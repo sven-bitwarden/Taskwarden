@@ -5,5 +5,6 @@ public enum AttentionStatus
     NeedsMyAttention,
     WaitingOnOthers,
     None,
-    NeedsMyReview
+    NeedsMyReview,
+    Reviewed
 }

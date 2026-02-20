@@ -16,5 +16,11 @@ public interface IGitHubService
     /// </summary>
     Task<List<(string? TicketKey, GitHubPullRequest Pr)>> FindReviewRequestsAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Finds open PRs that the authenticated user has already reviewed (approved or commented).
+    /// Returns a list of (TicketKey, PR) tuples. TicketKey may be null if not extractable.
+    /// </summary>
+    Task<List<(string? TicketKey, GitHubPullRequest Pr)>> FindReviewedPullRequestsAsync(CancellationToken cancellationToken = default);
+
     Task<string> GetCurrentUserLoginAsync();
 }

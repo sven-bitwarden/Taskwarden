@@ -1,0 +1,88 @@
+.snackbar {
+    position: fixed;
+    bottom: 1.25rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 900;
+    background-color: #1e2939;
+    border: 1px solid #333e4f;
+    border-radius: 8px;
+    width: min(360px, calc(100vw - 2.5rem));
+    box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.4);
+    animation: snackbar-in 0.25s ease-out;
+    overflow: hidden;
+}
+
+.snackbar-exit {
+    animation: snackbar-out 0.3s ease-in forwards;
+}
+
+@keyframes snackbar-in {
+    from { transform: translateX(-50%) translateY(1rem); opacity: 0; }
+    to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+@keyframes snackbar-out {
+    from { transform: translateX(-50%) translateY(0); opacity: 1; }
+    to { transform: translateX(-50%) translateY(1rem); opacity: 0; }
+}
+
+.snackbar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.45rem 0.65rem;
+    border-bottom: 1px solid #333e4f;
+}
+
+.snackbar-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #e5e7eb;
+}
+
+.snackbar-spinner {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-width: 0.12em;
+    color: #6baefa;
+}
+
+.snackbar-done-icon {
+    color: #18dc7a;
+    font-size: 0.72rem;
+}
+
+.snackbar-close {
+    background: none;
+    border: none;
+    color: #4a5565;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+.snackbar-close:hover {
+    color: #99a1af;
+}
+
+.snackbar-body {
+    padding: 0.4rem 0.65rem 0.5rem;
+    max-height: 10rem;
+    overflow-y: auto;
+}
+
+.snackbar-line {
+    font-size: 0.7rem;
+    color: #6a7282;
+    padding: 0.1rem 0;
+    line-height: 1.4;
+}
+
+.snackbar-line:last-child {
+    color: #99a1af;
+}

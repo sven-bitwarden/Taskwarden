@@ -1,0 +1,91 @@
+@using Taskwarden.State
+@implements IDisposable
+@inject DashboardStateContainer StateContainer
+
+@if (_visible)
+{
+    <div class="snackbar @(_dismissing ? "snackbar-exit" : "")">
+        <div class="snackbar-header">
+            <span class="snackbar-title">
+                @if (StateContainer.IsRefreshing)
+                {
+                    <span class="spinner-border spinner-border-sm snackbar-spinner" role="status"></span>
+                }
+                else
+                {
+                    <i class="fa-solid fa-circle-check snackbar-done-icon"></i>
+                }
+                Refreshing
+            </span>
+            <button class="snackbar-close" @onclick="Dismiss">&times;</button>
+        </div>
+        <div class="snackbar-body">
+            @foreach (var msg in _messages)
+            {
+                <div class="snackbar-line">@msg</div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private List<string> _messages = [];
+    private bool _visible;
+    private bool _dismissing;
+    private Timer? _autoDismissTimer;
+
+    protected override void OnInitialized()
+    {
+        StateContainer.ProgressChanged += OnProgressChanged;
+    }
+
+    private void OnProgressChanged()
+    {
+        InvokeAsync(() =>
+        {
+            _messages = [.. StateContainer.ProgressMessages];
+
+            if (StateContainer.IsRefreshing)
+            {
+                _visible = true;
+                _dismissing = false;
+                _autoDismissTimer?.Dispose();
+                _autoDismissTimer = null;
+            }
+            else if (_visible && _autoDismissTimer is null)
+            {
+                // Auto-dismiss 3s after refresh completes
+                _autoDismissTimer = new Timer(_ => InvokeAsync(BeginDismiss), null, 3000, Timeout.Infinite);
+            }
+
+            StateHasChanged();
+        });
+    }
+
+    private void BeginDismiss()
+    {
+        _dismissing = true;
+        StateHasChanged();
+        // Wait for the CSS exit animation, then hide
+        _autoDismissTimer?.Dispose();
+        _autoDismissTimer = new Timer(_ => InvokeAsync(() =>
+        {
+            _visible = false;
+            _dismissing = false;
+            StateHasChanged();
+        }), null, 300, Timeout.Infinite);
+    }
+
+    private void Dismiss()
+    {
+        _autoDismissTimer?.Dispose();
+        _autoDismissTimer = null;
+        BeginDismiss();
+    }
+
+    public void Dispose()
+    {
+        StateContainer.ProgressChanged -= OnProgressChanged;
+        _autoDismissTimer?.Dispose();
+    }
+}

@@ -124,6 +124,41 @@ public partial class GitHubService : IGitHubService
             .ToList();
     }
 
+    public async Task<List<(string? TicketKey, GitHubPullRequest Pr)>> FindReviewedPullRequestsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(_options.PersonalAccessToken) ||
+            string.IsNullOrWhiteSpace(_options.Organization))
+        {
+            return [];
+        }
+
+        var user = await _client.User.Current();
+        var login = user.Login;
+
+        var prs = await SearchPrsAsync($"org:{_options.Organization} reviewed-by:{login} is:pr is:open -author:{login}");
+        _logger.LogInformation("Found {Count} PRs already reviewed by {Login}", prs.Count, login);
+
+        var detailTasks = prs.Select(async pr =>
+        {
+            await _rateLimiter.WaitAsync(cancellationToken);
+            try
+            {
+                return await GetPrDetailsAsync(pr);
+            }
+            finally
+            {
+                _rateLimiter.Release();
+            }
+        });
+
+        var details = await Task.WhenAll(detailTasks);
+        return details
+            .Where(d => d.Pr is not null)
+            .Select(d => (d.TicketKey, d.Pr!))
+            .ToList();
+    }
+
     private async Task<IReadOnlyList<Octokit.Issue>> SearchPrsAsync(string query)
     {
         _logger.LogDebug("Searching GitHub PRs: {Query}", query);

@@ -51,6 +51,8 @@ public class RefreshHostedService(
         logger.LogInformation("Starting dashboard refresh");
         stateContainer.SetLoading();
 
+        var progress = new Progress<string>(msg => stateContainer.AddProgress(msg));
+
         try
         {
             using var scope = scopeFactory.CreateScope();
@@ -59,27 +61,32 @@ public class RefreshHostedService(
             {
                 try
                 {
+                    stateContainer.AddProgress("Authenticating with Jira and GitHub");
                     var ghService = scope.ServiceProvider.GetRequiredService<IGitHubService>();
                     var jiraService = scope.ServiceProvider.GetRequiredService<IJiraService>();
                     var ghLogin = await ghService.GetCurrentUserLoginAsync();
                     var jiraName = await jiraService.GetCurrentUserDisplayNameAsync(cancellationToken);
+                    stateContainer.AddProgress("Fetching active sprint");
                     var activeSprint = await jiraService.GetActiveSprintAsync(cancellationToken);
                     stateContainer.SetUserInfo(ghLogin, jiraName, activeSprint);
                     _userInfoFetched = true;
                 }
                 catch (Exception ex)
                 {
+                    stateContainer.AddProgress("Warning: failed to fetch user info");
                     logger.LogWarning(ex, "Failed to fetch user info");
                 }
             }
 
             var aggregator = scope.ServiceProvider.GetRequiredService<IWorkItemAggregator>();
-            var workItems = await aggregator.AggregateAsync(cancellationToken);
+            var workItems = await aggregator.AggregateAsync(progress, cancellationToken);
+            stateContainer.AddProgress($"Done — {workItems.Count} work items loaded");
             stateContainer.SetData(workItems);
             logger.LogInformation("Dashboard refresh complete: {Count} work items", workItems.Count);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            stateContainer.AddProgress($"Error: {ex.Message}");
             logger.LogError(ex, "Dashboard refresh failed");
             stateContainer.SetError(ex.Message);
         }

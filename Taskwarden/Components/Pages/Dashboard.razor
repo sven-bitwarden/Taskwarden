@@ -52,6 +52,7 @@ else
     var waitingReviewItems = waitingItems.Where(w => w.Stage == WorkflowStage.CodeReview).OrderBy(w => w.Ticket.UpdatedAt).ToList();
     var waitingQaItems = waitingItems.Where(w => w.Stage != WorkflowStage.CodeReview).OrderBy(w => w.Ticket.UpdatedAt).ToList();
     var reviewItems = items.Where(w => w.Attention == AttentionStatus.NeedsMyReview).ToList();
+    var reviewedItems = items.Where(w => w.Attention == AttentionStatus.Reviewed).ToList();
 
     <div class="board">
         <div class="board-column">
@@ -80,7 +81,7 @@ else
 
         <div class="board-column">
             <div class="board-column-header col-review">
-                Needs Review <span class="board-column-count">@reviewItems.Count</span>
+                Needs Review <span class="board-column-count">@(reviewItems.Count + reviewedItems.Count)</span>
             </div>
             <div class="board-column-items">
                 @foreach (var item in reviewItems)
@@ -88,6 +89,18 @@ else
                     <WorkItemCard Item="@item" />
                 }
             </div>
+            @if (reviewedItems.Count > 0)
+            {
+                <div class="board-subcategory-header">
+                    Reviewed <span class="board-column-count">@reviewedItems.Count</span>
+                </div>
+                <div class="board-column-items">
+                    @foreach (var item in reviewedItems)
+                    {
+                        <WorkItemCard Item="@item" />
+                    }
+                </div>
+            }
         </div>
 
         <div class="board-column">
@@ -115,6 +128,8 @@ else
         </div>
     </div>
 }
+
+<RefreshSnackbar />
 
 @code {
     private IReadOnlyList<WorkItem> _doneItems = [];

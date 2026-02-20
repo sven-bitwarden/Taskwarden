@@ -3,6 +3,7 @@ namespace Taskwarden.Models;
 public enum WorkflowStage
 {
     ToDo,
+    InAnalysis,
     InProgress,
     CodeReview,
     ReadyForQa,
