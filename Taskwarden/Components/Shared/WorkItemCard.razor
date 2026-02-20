@@ -1,7 +1,7 @@
 @using System.Text.Json
 @using Taskwarden.Models
 
-<div class="card work-item-card @BorderClass">
+<div class="card work-item-card @BorderClass @MuteClass">
     <div class="card-body">
         <div class="d-flex justify-content-between align-items-start mb-2">
             <div class="d-flex flex-wrap align-items-center gap-1">
@@ -129,6 +129,12 @@
     {
         AttentionStatus.NeedsMyAttention => "border-warning",
         _ => ""
+    };
+
+    private string MuteClass => Item.Attention switch
+    {
+        AttentionStatus.NeedsMyAttention or AttentionStatus.NeedsMyReview => "",
+        _ => "card-muted"
     };
 
     private string PrStateBadgeClass => Item.PrimaryPullRequest?.State switch

@@ -26,6 +26,15 @@
     color: #ff8a4c;
 }
 
+/* Muted cards — non-actionable items (waiting, done, future) */
+.card-muted {
+    opacity: 0.6;
+}
+
+.card-muted:hover {
+    opacity: 0.85;
+}
+
 .bg-purple {
     background-color: #c27aff !important;
     color: #070b18 !important;
