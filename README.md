@@ -12,7 +12,21 @@ Built with .NET 10, Blazor Server, and a Bitwarden dark theme.
    cp .env.template .env
    ```
 
-   - **Jira API token**: generate at https://id.atlassian.com/manage-profile/security/api-tokens, uses scoped tokens, with all five "Classic" read permissions 
+   - **Jira API token**: generate at https://id.atlassian.com/manage-profile/security/api-tokens, uses scoped tokens with the following read permissions:
+     - read:board-scope:jira-software
+     - read:board-scope.admin:jira-software
+     - read:dashboard:jira
+     - read:dashboard.property:jira
+     - read:project:jira
+     - read:project.property:jira
+     - read:project.feature:jira
+     - read:project.component:jira
+     - read:project-category:jira
+     - read:sprint:jira-software
+     - read:account
+     - read:jira-user
+     - read:me
+     - read:jira-work
    - **GitHub PAT (classic)**: uses fine-grained tokens, with `Metadata` and `Pull Requests: Read Access Only` scopes
 
 2. Build and run:
