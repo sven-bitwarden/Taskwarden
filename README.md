@@ -27,7 +27,8 @@ Built with .NET 10, Blazor Server, and a Bitwarden dark theme.
      - read:jira-user
      - read:me
      - read:jira-work
-   - **GitHub PAT**: uses fine-grained tokens, with `Metadata` and `Pull Requests: Read Access Only` scopes
+   - **GitHub PAT**: uses classic tokens with `repo` and `user` scope
+     - Sadly there is an issue with fine-grained tokens not being reliable for search results
 
 2. Build and run:
 
