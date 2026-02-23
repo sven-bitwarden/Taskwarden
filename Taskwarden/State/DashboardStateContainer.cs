@@ -63,9 +63,17 @@ public class DashboardStateContainer
         NotifyProgressChanged();
     }
 
-    public void SetUserInfo(string? gitHubLogin, string? jiraDisplayName, SprintInfo? activeSprint = null)
+    public void SetUserInfo(string? gitHubLogin, string? jiraDisplayName)
     {
-        _snapshot = _snapshot with { GitHubLogin = gitHubLogin, JiraDisplayName = jiraDisplayName, ActiveSprint = activeSprint };
+        _snapshot = _snapshot with { GitHubLogin = gitHubLogin, JiraDisplayName = jiraDisplayName };
+        NotifyStateChanged();
+    }
+
+    public void SetActiveSprint(SprintInfo? activeSprint)
+    {
+        if (_snapshot.ActiveSprint == activeSprint)
+            return;
+        _snapshot = _snapshot with { ActiveSprint = activeSprint };
         NotifyStateChanged();
     }
 

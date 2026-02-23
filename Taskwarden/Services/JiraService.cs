@@ -16,6 +16,7 @@ public class JiraService(HttpClient httpClient, IOptions<JiraOptions> options, I
     private readonly JiraOptions _options = options.Value;
     private string ApiBaseUrl => $"https://api.atlassian.com/ex/jira/{_options.CloudId}";
     private string? _sprintFieldId;
+    private int? _boardId;
 
     public async Task<IReadOnlyList<JiraTicket>> GetMyTicketsAsync(CancellationToken cancellationToken = default)
     {
@@ -164,35 +165,11 @@ public class JiraService(HttpClient httpClient, IOptions<JiraOptions> options, I
 
         try
         {
-            // Find the board by name
-            var boardUrl = $"{ApiBaseUrl}/rest/agile/1.0/board?name={Uri.EscapeDataString(_options.BoardName)}";
-            var boardRequest = CreateRequest(HttpMethod.Get, boardUrl);
-            var boardResponse = await httpClient.SendAsync(boardRequest, cancellationToken);
-            boardResponse.EnsureSuccessStatusCode();
-
-            var boardJson = await boardResponse.Content.ReadFromJsonAsync<JsonElement>(JsonOptions, cancellationToken);
-            var boards = boardJson.GetProperty("values");
-            if (boards.GetArrayLength() == 0)
-            {
-                logger.LogWarning("No board found with name '{BoardName}'", _options.BoardName);
+            _boardId ??= await ResolveBoardIdAsync(cancellationToken);
+            if (_boardId is null)
                 return null;
-            }
 
-            // Prefer exact name match since the API does a "contains" search
-            int? boardId = null;
-            foreach (var board in boards.EnumerateArray())
-            {
-                var boardName = board.GetProperty("name").GetString();
-                if (string.Equals(boardName, _options.BoardName, StringComparison.OrdinalIgnoreCase))
-                {
-                    boardId = board.GetProperty("id").GetInt32();
-                    break;
-                }
-            }
-            boardId ??= boards[0].GetProperty("id").GetInt32();
-
-            // Get active sprint for this board
-            var sprintUrl = $"{ApiBaseUrl}/rest/agile/1.0/board/{boardId.Value}/sprint?state=active";
+            var sprintUrl = $"{ApiBaseUrl}/rest/agile/1.0/board/{_boardId.Value}/sprint?state=active";
             var sprintRequest = CreateRequest(HttpMethod.Get, sprintUrl);
             var sprintResponse = await httpClient.SendAsync(sprintRequest, cancellationToken);
             sprintResponse.EnsureSuccessStatusCode();
@@ -214,6 +191,32 @@ public class JiraService(HttpClient httpClient, IOptions<JiraOptions> options, I
             logger.LogWarning(ex, "Failed to fetch active sprint for board '{BoardName}'", _options.BoardName);
             return null;
         }
+    }
+
+    private async Task<int?> ResolveBoardIdAsync(CancellationToken cancellationToken)
+    {
+        var boardUrl = $"{ApiBaseUrl}/rest/agile/1.0/board?name={Uri.EscapeDataString(_options.BoardName!)}";
+        var boardRequest = CreateRequest(HttpMethod.Get, boardUrl);
+        var boardResponse = await httpClient.SendAsync(boardRequest, cancellationToken);
+        boardResponse.EnsureSuccessStatusCode();
+
+        var boardJson = await boardResponse.Content.ReadFromJsonAsync<JsonElement>(JsonOptions, cancellationToken);
+        var boards = boardJson.GetProperty("values");
+        if (boards.GetArrayLength() == 0)
+        {
+            logger.LogWarning("No board found with name '{BoardName}'", _options.BoardName);
+            return null;
+        }
+
+        // Prefer exact name match since the API does a "contains" search
+        foreach (var board in boards.EnumerateArray())
+        {
+            var boardName = board.GetProperty("name").GetString();
+            if (string.Equals(boardName, _options.BoardName, StringComparison.OrdinalIgnoreCase))
+                return board.GetProperty("id").GetInt32();
+        }
+
+        return boards[0].GetProperty("id").GetInt32();
     }
 
     public async Task<string> GetCurrentUserDisplayNameAsync(CancellationToken cancellationToken = default)

@@ -57,18 +57,17 @@ public class RefreshHostedService(
         {
             using var scope = scopeFactory.CreateScope();
 
+            var jiraService = scope.ServiceProvider.GetRequiredService<IJiraService>();
+
             if (!_userInfoFetched)
             {
                 try
                 {
                     stateContainer.AddProgress("Authenticating with Jira and GitHub");
                     var ghService = scope.ServiceProvider.GetRequiredService<IGitHubService>();
-                    var jiraService = scope.ServiceProvider.GetRequiredService<IJiraService>();
                     var ghLogin = await ghService.GetCurrentUserLoginAsync();
                     var jiraName = await jiraService.GetCurrentUserDisplayNameAsync(cancellationToken);
-                    stateContainer.AddProgress("Fetching active sprint");
-                    var activeSprint = await jiraService.GetActiveSprintAsync(cancellationToken);
-                    stateContainer.SetUserInfo(ghLogin, jiraName, activeSprint);
+                    stateContainer.SetUserInfo(ghLogin, jiraName);
                     _userInfoFetched = true;
                 }
                 catch (Exception ex)
@@ -76,6 +75,18 @@ public class RefreshHostedService(
                     stateContainer.AddProgress("Warning: failed to fetch user info");
                     logger.LogWarning(ex, "Failed to fetch user info");
                 }
+            }
+
+            // Refresh sprint every cycle so it stays current across sprint boundaries
+            try
+            {
+                stateContainer.AddProgress("Fetching active sprint");
+                var activeSprint = await jiraService.GetActiveSprintAsync(cancellationToken);
+                stateContainer.SetActiveSprint(activeSprint);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to refresh active sprint");
             }
 
             var aggregator = scope.ServiceProvider.GetRequiredService<IWorkItemAggregator>();
