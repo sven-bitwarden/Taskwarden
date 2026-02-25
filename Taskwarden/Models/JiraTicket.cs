@@ -1,5 +1,12 @@
 namespace Taskwarden.Models;
 
+public record JiraLinkedIssue
+{
+    public required string Key { get; init; }
+    public required string StatusCategoryKey { get; init; }
+    public required string LinkType { get; init; }
+}
+
 public record JiraTicket
 {
     public required string Key { get; init; }
@@ -12,6 +19,7 @@ public record JiraTicket
     public required string BrowseUrl { get; init; }
     public DateTimeOffset? UpdatedAt { get; init; }
     public IReadOnlyList<string> Labels { get; init; } = [];
+    public IReadOnlyList<JiraLinkedIssue> LinkedIssues { get; init; } = [];
     public string? SprintName { get; init; }
     public string? SprintState { get; init; }
 }

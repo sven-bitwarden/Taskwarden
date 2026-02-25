@@ -344,6 +344,9 @@ public class WorkItemAggregator(
             WorkflowStage.ReadyForMerge =>
                 (AttentionStatus.NeedsMyAttention, "Merge the PR"),
 
+            WorkflowStage.Blocked when AllBlockersAreDone(ticket) =>
+                (AttentionStatus.NeedsMyAttention, "Unblocked — all blockers are Done"),
+
             WorkflowStage.Blocked =>
                 (AttentionStatus.WaitingOnOthers, "Blocked"),
 
@@ -355,6 +358,15 @@ public class WorkItemAggregator(
 
             _ => (AttentionStatus.None, null)
         };
+    }
+
+    private static bool AllBlockersAreDone(JiraTicket ticket)
+    {
+        var blockers = ticket.LinkedIssues
+            .Where(l => string.Equals(l.LinkType, "is blocked by", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        return blockers.Count > 0 && blockers.All(b => b.StatusCategoryKey == "done");
     }
 
     private static JiraTicket CreateStubTicket(string key, GitHubPullRequest pr)

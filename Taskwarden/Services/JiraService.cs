@@ -30,7 +30,7 @@ public class JiraService(HttpClient httpClient, IOptions<JiraOptions> options, I
         _sprintFieldId ??= await DiscoverSprintFieldIdAsync(cancellationToken);
 
         var requestedFields = new List<string>
-            { "summary", "status", "issuetype", "priority", "project", "updated", "labels" };
+            { "summary", "status", "issuetype", "priority", "project", "updated", "labels", "issuelinks" };
         if (_sprintFieldId is not null)
             requestedFields.Add(_sprintFieldId);
 
@@ -87,7 +87,7 @@ public class JiraService(HttpClient httpClient, IOptions<JiraOptions> options, I
         _sprintFieldId ??= await DiscoverSprintFieldIdAsync(cancellationToken);
 
         var requestedFields = new List<string>
-            { "summary", "status", "issuetype", "priority", "project", "updated", "labels" };
+            { "summary", "status", "issuetype", "priority", "project", "updated", "labels", "issuelinks" };
         if (_sprintFieldId is not null)
             requestedFields.Add(_sprintFieldId);
 
@@ -277,6 +277,55 @@ public class JiraService(HttpClient httpClient, IOptions<JiraOptions> options, I
     private static string? GetString(JsonElement el, string prop)
         => el.TryGetProperty(prop, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
 
+    private static IReadOnlyList<JiraLinkedIssue> ParseLinkedIssues(JsonElement fields)
+    {
+        if (!fields.TryGetProperty("issuelinks", out var links) || links.ValueKind != JsonValueKind.Array)
+            return [];
+
+        var result = new List<JiraLinkedIssue>();
+        foreach (var link in links.EnumerateArray())
+        {
+            var type = link.TryGetProperty("type", out var t) ? t : default;
+
+            // Inward: "is blocked by" — the linked issue blocks this one
+            if (link.TryGetProperty("inwardIssue", out var inward) && inward.ValueKind == JsonValueKind.Object)
+            {
+                var parsed = ParseOneLinkedIssue(inward, GetString(type, "inward"));
+                if (parsed is not null) result.Add(parsed);
+            }
+
+            // Outward: "blocks" — this issue blocks the linked one
+            if (link.TryGetProperty("outwardIssue", out var outward) && outward.ValueKind == JsonValueKind.Object)
+            {
+                var parsed = ParseOneLinkedIssue(outward, GetString(type, "outward"));
+                if (parsed is not null) result.Add(parsed);
+            }
+        }
+
+        return result;
+    }
+
+    private static JiraLinkedIssue? ParseOneLinkedIssue(JsonElement issue, string? linkType)
+    {
+        var key = GetString(issue, "key");
+        if (key is null || linkType is null) return null;
+
+        var statusCategoryKey = issue.TryGetProperty("fields", out var f)
+            && f.TryGetProperty("status", out var s)
+            && s.TryGetProperty("statusCategory", out var cat)
+                ? GetString(cat, "key")
+                : null;
+
+        if (statusCategoryKey is null) return null;
+
+        return new JiraLinkedIssue
+        {
+            Key = key,
+            StatusCategoryKey = statusCategoryKey,
+            LinkType = linkType
+        };
+    }
+
     private JiraTicket ParseTicket(JsonElement issue)
     {
         var fields = issue.GetProperty("fields");
@@ -308,6 +357,7 @@ public class JiraService(HttpClient httpClient, IOptions<JiraOptions> options, I
             Labels = fields.TryGetProperty("labels", out var labels)
                 ? labels.EnumerateArray().Select(l => l.GetString()!).ToList()
                 : [],
+            LinkedIssues = ParseLinkedIssues(fields),
             SprintName = sprintName,
             SprintState = sprintState
         };
