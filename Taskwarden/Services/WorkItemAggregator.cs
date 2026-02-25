@@ -124,10 +124,10 @@ public class WorkItemAggregator(
             var stage = MapStage(ticket.StatusName);
             var (jiraAttention, jiraReason) = ComputeAttention(ticket, stage, primaryPr, prs);
 
-            // If the Jira status indicates a waiting/done state, the review isn't actionable
+            // If the Jira status indicates waiting or idle, the review IS actionable for us
             var attention = jiraAttention is AttentionStatus.WaitingOnOthers or AttentionStatus.None
-                ? AttentionStatus.WaitingOnOthers
-                : AttentionStatus.NeedsMyReview;
+                ? AttentionStatus.NeedsMyReview
+                : AttentionStatus.WaitingOnOthers;
 
             workItems.Add(new WorkItem
             {
@@ -325,6 +325,9 @@ public class WorkItemAggregator(
 
             WorkflowStage.CodeReview when primaryPr?.ReviewState == "changes_requested" =>
                 (AttentionStatus.NeedsMyAttention, "Address review feedback"),
+
+            WorkflowStage.CodeReview when primaryPr?.ReviewState == "approved" && primaryPr.PendingReviewers.Count > 0 =>
+                (AttentionStatus.WaitingOnOthers, "Waiting for remaining reviewers"),
 
             WorkflowStage.CodeReview when primaryPr?.ReviewState == "approved" =>
                 (AttentionStatus.NeedsMyAttention, "PR approved — move to QA or merge"),
