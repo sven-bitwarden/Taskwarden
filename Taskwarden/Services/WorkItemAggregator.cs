@@ -124,8 +124,8 @@ public class WorkItemAggregator(
             var stage = MapStage(ticket.StatusName);
             var (jiraAttention, jiraReason) = ComputeAttention(ticket, stage, primaryPr, prs);
 
-            // If the Jira status indicates waiting or idle, the review IS actionable for us
-            var attention = jiraAttention is AttentionStatus.WaitingOnOthers or AttentionStatus.None
+            // Review is only actionable if the ticket is still in a code-review-relevant stage
+            var attention = stage is WorkflowStage.CodeReview or WorkflowStage.InProgress
                 ? AttentionStatus.NeedsMyReview
                 : AttentionStatus.WaitingOnOthers;
 
