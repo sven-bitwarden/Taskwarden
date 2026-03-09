@@ -109,12 +109,18 @@ public class WorkItemAggregator(
                 reviewTicketsById[t.Key] = t;
         }
 
+        logger.LogInformation("Review requests grouped: {Count} ticket keys, {OrphanCount} orphans. Keys: [{Keys}]",
+            reviewsByTicket.Count, orphanReviewPrs.Count, string.Join(", ", reviewsByTicket.Keys));
+
         // Create WorkItems for review PRs with ticket keys
         foreach (var (key, prs) in reviewsByTicket)
         {
             // Skip if this ticket is already in our work items (it's our own PR)
             if (existingKeys.Contains(key))
+            {
+                logger.LogInformation("Skipping review for {Key} — already in own work items", key);
                 continue;
+            }
 
             var ticket = reviewTicketsById.TryGetValue(key, out var t)
                 ? t
@@ -126,7 +132,7 @@ public class WorkItemAggregator(
 
             // Review is only actionable if the ticket is still in a code-review-relevant stage
             var attention = stage is WorkflowStage.CodeReview or WorkflowStage.InProgress
-                ? AttentionStatus.NeedsMyReview
+                ? (primaryPr?.IsDraft == true ? AttentionStatus.DraftReview : AttentionStatus.NeedsMyReview)
                 : AttentionStatus.WaitingOnOthers;
 
             workItems.Add(new WorkItem
@@ -139,6 +145,8 @@ public class WorkItemAggregator(
                 Attention = attention,
                 AttentionReason = attention == AttentionStatus.NeedsMyReview
                     ? "Review requested"
+                    : attention == AttentionStatus.DraftReview
+                    ? "Draft — review requested"
                     : jiraReason ?? $"Waiting ({ticket.StatusName})",
                 LastRefreshed = now
             });
@@ -157,8 +165,8 @@ public class WorkItemAggregator(
                 PullRequests = [pr],
                 PrimaryPullRequest = pr,
                 Stage = WorkflowStage.CodeReview,
-                Attention = AttentionStatus.NeedsMyReview,
-                AttentionReason = "Review requested",
+                Attention = pr.IsDraft ? AttentionStatus.DraftReview : AttentionStatus.NeedsMyReview,
+                AttentionReason = pr.IsDraft ? "Draft — review requested" : "Review requested",
                 LastRefreshed = now
             });
         }
@@ -356,7 +364,10 @@ public class WorkItemAggregator(
             WorkflowStage.Done =>
                 (AttentionStatus.None, null),
 
-            _ => (AttentionStatus.None, null)
+            WorkflowStage.Unknown =>
+                (AttentionStatus.NeedsMyAttention, $"Unknown status: {ticket.StatusName}"),
+
+            _ => (AttentionStatus.NeedsMyAttention, $"Unknown status: {ticket.StatusName}")
         };
     }
 

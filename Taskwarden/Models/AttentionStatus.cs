@@ -6,5 +6,6 @@ public enum AttentionStatus
     WaitingOnOthers,
     None,
     NeedsMyReview,
+    DraftReview,
     Reviewed
 }

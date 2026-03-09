@@ -62,7 +62,7 @@
         var cutoff = DateTimeOffset.UtcNow.AddDays(-8);
 
         var myItems = WorkItems
-            .Where(w => w.Attention != AttentionStatus.NeedsMyReview)
+            .Where(w => w.Attention is not (AttentionStatus.NeedsMyReview or AttentionStatus.DraftReview or AttentionStatus.Reviewed))
             .ToList();
 
         var lastWeekItems = myItems

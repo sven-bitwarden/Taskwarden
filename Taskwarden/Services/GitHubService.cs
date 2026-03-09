@@ -118,6 +118,10 @@ public partial class GitHubService : IGitHubService
         {
             if (detail.Pr is null) continue;
 
+            _logger.LogInformation("Routing PR #{Number} ({Repo}) — sources: {Sources}, ticketKey: {Key}, pendingReviewers: [{Reviewers}]",
+                detail.Pr.Number, detail.Pr.RepositoryFullName, detail.Sources, detail.TicketKey,
+                string.Join(", ", detail.Pr.PendingReviewers));
+
             // Authored PRs (open or merged)
             if ((detail.Sources & (PrSource.AuthoredOpen | PrSource.AuthoredMerged)) != 0
                 && detail.TicketKey is not null)
@@ -130,7 +134,8 @@ public partial class GitHubService : IGitHubService
                 list.Add(detail.Pr);
             }
 
-            // Review requests — filter to PRs where user is still a requested reviewer
+            // Review requests — only include if user is individually requested
+            // (review-requested: search also matches team-based requests, filter those out)
             if ((detail.Sources & PrSource.ReviewRequested) != 0)
             {
                 if (detail.Pr.PendingReviewers.Any(r =>
@@ -140,7 +145,7 @@ public partial class GitHubService : IGitHubService
                 }
                 else
                 {
-                    _logger.LogDebug("Skipping PR #{Number} — {Login} not directly requested as reviewer",
+                    _logger.LogInformation("Skipping PR #{Number} — {Login} not individually requested (team/CODEOWNERS only)",
                         detail.Pr.Number, login);
                 }
             }
