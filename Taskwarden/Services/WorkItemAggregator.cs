@@ -70,6 +70,26 @@ public class WorkItemAggregator(
             };
         }).ToList();
 
+        // Build WorkItems for authored PRs with no Jira ticket
+        foreach (var pr in githubData.OrphanAuthoredPrs)
+        {
+            var stubKey = $"{FormatRepoShortName(pr.RepositoryFullName)}#{pr.Number}";
+            var ticket = CreateStubTicket(stubKey, pr);
+            var (attention, reason) = ComputePrOnlyAttention(pr);
+
+            workItems.Add(new WorkItem
+            {
+                TicketKey = stubKey,
+                Ticket = ticket,
+                PullRequests = [pr],
+                PrimaryPullRequest = pr,
+                Stage = ComputePrOnlyStage(pr),
+                Attention = attention,
+                AttentionReason = reason,
+                LastRefreshed = now
+            });
+        }
+
         // Build review request WorkItems
         var existingKeys = new HashSet<string>(workItems.Select(w => w.TicketKey), StringComparer.OrdinalIgnoreCase);
 
@@ -326,7 +346,7 @@ public class WorkItemAggregator(
                 (AttentionStatus.NeedsMyAttention, "Create a branch and PR"),
 
             WorkflowStage.InProgress when hasDraftPr && !hasNonDraftOpenPr =>
-                (AttentionStatus.None, null),
+                (AttentionStatus.NeedsMyAttention, "Publish PR"),
 
             WorkflowStage.InProgress when hasNonDraftOpenPr =>
                 (AttentionStatus.NeedsMyAttention, "PR is open - move ticket to Code Review?"),
@@ -391,6 +411,24 @@ public class WorkItemAggregator(
             UpdatedAt = pr.UpdatedAt
         };
     }
+
+    private static WorkflowStage ComputePrOnlyStage(GitHubPullRequest pr) => pr switch
+    {
+        { IsMerged: true } => WorkflowStage.Done,
+        { IsDraft: true } => WorkflowStage.InProgress,
+        { ReviewState: "changes_requested" } => WorkflowStage.CodeReview,
+        { ReviewState: "approved" } => WorkflowStage.ReadyForMerge,
+        _ => WorkflowStage.CodeReview
+    };
+
+    private static (AttentionStatus Attention, string? Reason) ComputePrOnlyAttention(GitHubPullRequest pr) => pr switch
+    {
+        { IsMerged: true } => (AttentionStatus.None, null),
+        { IsDraft: true } => (AttentionStatus.NeedsMyAttention, "Publish PR"),
+        { ReviewState: "changes_requested" } => (AttentionStatus.NeedsMyAttention, "Address review feedback"),
+        { ReviewState: "approved" } => (AttentionStatus.NeedsMyAttention, "Merge the PR"),
+        _ => (AttentionStatus.WaitingOnOthers, "Waiting for code review")
+    };
 
     private static string FormatRepoShortName(string repoFullName)
     {

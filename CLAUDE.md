@@ -78,7 +78,7 @@ Current mappings: To Do, In Analysis, In Progress, Code Review, Ready for QA, In
 Future sprint          -> None ("Future sprint (name)")
 ToDo                   -> NeedsMyAttention ("Start work")
 InProgress + no PR     -> NeedsMyAttention ("Create a branch and PR")
-InProgress + draft     -> None (working)
+InProgress + draft     -> NeedsMyAttention ("Publish PR")
 InProgress + open PR   -> NeedsMyAttention ("Move to Code Review?")
 CodeReview + changes   -> NeedsMyAttention ("Address feedback")
 CodeReview             -> WaitingOnOthers ("Waiting for review")

@@ -111,6 +111,7 @@ public partial class GitHubService : IGitHubService
 
         // Route each PR to the appropriate result bucket(s) based on source tags
         var authoredPrsByTicket = new Dictionary<string, List<GitHubPullRequest>>(StringComparer.OrdinalIgnoreCase);
+        var orphanAuthoredPrs = new List<GitHubPullRequest>();
         var reviewRequestsList = new List<(string? TicketKey, GitHubPullRequest Pr)>();
         var reviewedPrsList = new List<(string? TicketKey, GitHubPullRequest Pr)>();
 
@@ -123,15 +124,21 @@ public partial class GitHubService : IGitHubService
                 string.Join(", ", detail.Pr.PendingReviewers));
 
             // Authored PRs (open or merged)
-            if ((detail.Sources & (PrSource.AuthoredOpen | PrSource.AuthoredMerged)) != 0
-                && detail.TicketKey is not null)
+            if ((detail.Sources & (PrSource.AuthoredOpen | PrSource.AuthoredMerged)) != 0)
             {
-                if (!authoredPrsByTicket.TryGetValue(detail.TicketKey, out var list))
+                if (detail.TicketKey is not null)
                 {
-                    list = [];
-                    authoredPrsByTicket[detail.TicketKey] = list;
+                    if (!authoredPrsByTicket.TryGetValue(detail.TicketKey, out var list))
+                    {
+                        list = [];
+                        authoredPrsByTicket[detail.TicketKey] = list;
+                    }
+                    list.Add(detail.Pr);
                 }
-                list.Add(detail.Pr);
+                else
+                {
+                    orphanAuthoredPrs.Add(detail.Pr);
+                }
             }
 
             // Review requests — only include if user is individually requested
@@ -160,6 +167,7 @@ public partial class GitHubService : IGitHubService
         return new GitHubFetchResult
         {
             AuthoredPrsByTicket = authoredPrsByTicket,
+            OrphanAuthoredPrs = orphanAuthoredPrs,
             ReviewRequests = reviewRequestsList,
             ReviewedPrs = reviewedPrsList
         };
